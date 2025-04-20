@@ -15,22 +15,18 @@ class ReservationCreate(BaseModel):
 def create_reservation(
     reservation: ReservationCreate, 
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user)
+    current_user: Member = Depends(get_current_user)
 ):
+    # Ensure member can only create reservations for themselves
+    if str(reservation.member_id) != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only create reservations for yourself"
+        )
+
     book = db.query(Book).filter(Book.id == reservation.book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
-    
-    member = db.query(Member).filter(Member.id == reservation.member_id).first()
-    if not member:
-        raise HTTPException(status_code=404, detail="Member not found")
-
-    # Add authorization check
-    if str(member.id) != current_user:
-        raise HTTPException(
-            status_code=403,
-            detail="Not authorized to make reservation for this member"
-        )
 
     existing_reservation = db.query(Reservation).filter(
         Reservation.book_id == reservation.book_id,
@@ -39,7 +35,7 @@ def create_reservation(
     ).first()
     
     if existing_reservation:
-        raise HTTPException(status_code=400, detail="Book already reserved by this member")
+        raise HTTPException(status_code=400, detail="Book already reserved by you")
 
     db_reservation = Reservation(**reservation.dict())
     db.add(db_reservation)
@@ -47,18 +43,46 @@ def create_reservation(
     db.refresh(db_reservation)
     return db_reservation
 
+@router.get("/")
+def get_reservations(
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_current_user)
+):
+    # Admin can see all active reservations
+    if current_user.is_admin:
+        return db.query(Reservation).all()
+    
+    # Regular users see only their reservations
+    return db.query(Reservation).filter(
+        Reservation.member_id == current_user.id
+    ).all()
+
+@router.get("/active")
+def get_active_reservations(
+    db: Session = Depends(get_db),
+    current_user: Member = Depends(get_current_user)
+):
+    if current_user.is_admin:
+        return db.query(Reservation).filter(Reservation.is_active == True).all()
+    
+    return db.query(Reservation).filter(
+        Reservation.member_id == current_user.id,
+        Reservation.is_active == True
+    ).all()
+
+# Fix the cancel reservation endpoint
 @router.put("/{reservation_id}/cancel")
 def cancel_reservation(
     reservation_id: int, 
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user)
+    current_user: Member = Depends(get_current_user)
 ):
     reservation = db.query(Reservation).filter(Reservation.id == reservation_id).first()
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     
-    # Add authorization check
-    if str(reservation.member_id) != current_user:
+    # Allow both admin and reservation owner to cancel
+    if not current_user.is_admin and reservation.member_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="Not authorized to cancel this reservation"
