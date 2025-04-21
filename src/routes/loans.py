@@ -24,7 +24,6 @@ def create_loan(
             detail="You can only create loans for yourself"
         )
     
-    # Rest of the validation logic
     book = db.query(Book).filter(Book.id == loan.book_id).first()
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
@@ -85,7 +84,7 @@ def get_borrowed_books(
         Loan.is_returned == False
     ).all()
 
-# Add a new endpoint for all loans history
+
 @router.get("/history")
 def get_loans_history(
     db: Session = Depends(get_db),

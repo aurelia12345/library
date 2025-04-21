@@ -70,7 +70,7 @@ def get_active_reservations(
         Reservation.is_active == True
     ).all()
 
-# Fix the cancel reservation endpoint
+
 @router.put("/{reservation_id}/cancel")
 def cancel_reservation(
     reservation_id: int, 

@@ -1,9 +1,11 @@
+import enum 
+
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 from passlib.context import CryptContext
-import enum  # Add this import
+
 
 Base = declarative_base()
 

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database.database import get_db
@@ -6,8 +8,8 @@ from pydantic import BaseModel, EmailStr, constr
 from auth.auth_utils import get_current_user
 
 router = APIRouter()
-import logging
-# Add logging configuration at the top of the file
+
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -60,7 +62,7 @@ def create_member(
     db.refresh(db_member)
     return f"User {db_member.name} created successfully"
 
-# Add this after MemberCreate class
+
 class MemberResponse(BaseModel):
     id: int
     name: str
@@ -84,7 +86,7 @@ def get_members(
         return [MemberResponse.model_validate(member) for member in members]
     return [MemberResponse.model_validate(current_user)]
 
-# Modify the get_member return
+
 @router.get("/{member_id}")
 def get_member(
     member_id: int,

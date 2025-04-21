@@ -39,7 +39,7 @@ def get_books(
 ):
     return db.query(Book).all()
 
-# Add BookResponse model
+
 class BookResponse(BaseModel):
     id: int
     title: str
